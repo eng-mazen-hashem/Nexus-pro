@@ -232,7 +232,7 @@
 </div>
 
 <script type="module">
-  import { supabase } from './js/supabaseClient.js';
+  import { supabase, NexusAuth } from './js/supabaseClient.js';
 
   // 1. ربط الدوال مباشرة بالـ window في أول سطر لضمان عمل الأزرار مهما حدثت أخطاء لاحقة
   window.loadSettings = loadSettings;
@@ -269,11 +269,20 @@
 
   // 2. المتغيرات والدوال
   const urlParams = new URLSearchParams(window.location.search);
-  const myBranch = urlParams.get('branch') || 'all'; 
+  
+  // ═══ CAFE_ID — قلب نظام Multi-Tenancy ═══
+  // الأولوية: Session ← URL ← القيمة الافتراضية
+  const _session = NexusAuth.getSession();
+  const CAFE_ID  = _session?.cafeId   || urlParams.get('cafe')   || 'cafe_default';
+  const myBranch = _session?.branchId || urlParams.get('branch') || 'all';
+
   let displayBranchName = (myBranch !== 'all') ? myBranch.replace(/_/g, ' ') : '';
   
   document.getElementById('branch-badge').innerText = (myBranch !== 'all') ? 'فرع: ' + displayBranchName : 'الإدارة العامة';
-  document.getElementById('login-title').innerText = (myBranch !== 'all') ? 'كاشير: ' + displayBranchName : 'الإدارة العامة';
+  // عرض اسم المقهى في الـ UI إذا وُجد
+  const cafeNameEl = document.getElementById('cafe-name-display');
+  if (cafeNameEl) cafeNameEl.innerText = CAFE_ID !== 'cafe_default' ? CAFE_ID : '';
+  document.getElementById('login-title').innerText  = (myBranch !== 'all') ? 'كاشير: ' + displayBranchName : 'الإدارة العامة';
 
   let lastOrderCount = 0; 
   let isFirstLoad = true; 
@@ -295,7 +304,7 @@
 
   async function loadSettings() {
       try {
-          const { data: settingsData } = await supabase.from('tenant_settings').select('*');
+          const { data: settingsData } = await supabase.from('tenant_settings').select('*').eq('cafe_id', CAFE_ID);
           let locationsObj = {};
           
           if(settingsData) {
@@ -330,7 +339,7 @@
               bWrapper.innerHTML = `<select id="nBranch" style="margin-bottom:0; border-color:var(--gold);">${optionsHtml}</select>`;
           }
 
-          const { data: menuItems } = await supabase.from('menu_items').select('category');
+          const { data: menuItems } = await supabase.from('menu_items').select('category').eq('cafe_id', CAFE_ID);
           if(menuItems) {
               const uniqueCats = [...new Set(menuItems.map(i => i.category))];
               document.getElementById('category-options').innerHTML = uniqueCats.map(c => `<option value="${c}">`).join('');
@@ -359,57 +368,82 @@
       calculateDrawer(); 
   }
 
-  function checkPassword() {
-      const pass = document.getElementById('admin-pass-input').value; 
-      if(!pass) return;
+  async function checkPassword() {
+      const pass = document.getElementById('admin-pass-input').value;
+      if (!pass) return;
 
-      let expectedPass = '123';
-      if (myBranch === 'all') {
-          expectedPass = systemPasswords.master; 
-      } else if (systemPasswords.branches[myBranch]) {
-          expectedPass = systemPasswords.branches[myBranch]; 
-      }
+      const btn = document.getElementById('btn-check-pass');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.disabled = true;
 
-      if (pass !== expectedPass) {
-          alert('الرمز السري غير صحيح ❌');
+      // ① أولاً — جرّب Login حقيقي عبر قاعدة البيانات
+      const username = 'admin'; // الكاشير يدخل الباسورد فقط، username ثابت لكل فرع
+      const result = await NexusAuth.login(CAFE_ID, myBranch === 'all' ? 'admin' : myBranch, pass);
+
+      if (result.success) {
+          // ✅ Login ناجح عبر cafe_users
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          isBranchUnlocked = true;
+          document.getElementById('auth-modal').style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+          document.getElementById('admin-pass-input').value = '';
+          fetchOrders();
+          setupRealtime();
           return;
       }
-      
-      const btn = document.getElementById('btn-check-pass'); 
-      const originalText = btn.innerHTML; 
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-      
-      setTimeout(() => {
-          btn.innerHTML = originalText;
-          isBranchUnlocked = true; 
-          document.getElementById('auth-modal').style.display = 'none'; 
-          document.getElementById('app-content').style.display = 'flex'; 
-          document.getElementById('admin-pass-input').value = ''; 
-          fetchOrders(); 
+
+      // ② fallback — تحقق من كلمة السر القديمة من tenant_settings (للتوافق مع الإعداد الحالي)
+      let expectedPass = systemPasswords.master;
+      if (myBranch !== 'all' && systemPasswords.branches[myBranch]) {
+          expectedPass = systemPasswords.branches[myBranch];
+      }
+
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+
+      if (pass === expectedPass) {
+          isBranchUnlocked = true;
+          document.getElementById('auth-modal').style.display = 'none';
+          document.getElementById('app-content').style.display = 'flex';
+          document.getElementById('admin-pass-input').value = '';
+          fetchOrders();
           setupRealtime();
-      }, 500);
+      } else {
+          alert('الرمز السري غير صحيح ❌');
+          document.getElementById('admin-pass-input').value = '';
+      }
   }
 
-  function checkMasterPassword() {
-      const pass = document.getElementById('master-pass-input').value; 
-      if(!pass) return;
-      
-      const btn = document.getElementById('btn-check-master'); 
-      const originalText = btn.innerHTML; 
+  async function checkMasterPassword() {
+      const pass = document.getElementById('master-pass-input').value;
+      if (!pass) return;
+
+      const btn = document.getElementById('btn-check-master');
+      const originalText = btn.innerHTML;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      btn.disabled = true;
+
+      // تحقق عبر قاعدة البيانات أولاً
+      const result = await NexusAuth.login(CAFE_ID, 'admin', pass);
+      const isOwner = result.success && (result.session?.role === 'owner' || result.session?.role === 'manager');
       
-      setTimeout(() => {
-          btn.innerHTML = originalText;
-          if(pass === systemPasswords.master) { 
-              isMasterUnlocked = true; 
-              document.getElementById('master-auth-modal').style.display = 'none'; 
-              document.getElementById('master-pass-input').value = ''; 
-              if(pendingMasterAction) pendingMasterAction(); 
-          } else { 
-              alert("كلمة مرور الإدارة العليا خاطئة ❌"); 
-              document.getElementById('master-pass-input').value = ''; 
-          }
-      }, 500);
+      // fallback للباسورد القديم
+      const fallbackOk = pass === systemPasswords.master;
+
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+
+      if (isOwner || fallbackOk) {
+          isMasterUnlocked = true;
+          document.getElementById('master-auth-modal').style.display = 'none';
+          document.getElementById('master-pass-input').value = '';
+          if (pendingMasterAction) pendingMasterAction();
+      } else {
+          alert('كلمة مرور الإدارة العليا خاطئة ❌');
+          document.getElementById('master-pass-input').value = '';
+      }
   }
 
   function updateNetworkStatus() {
@@ -445,7 +479,7 @@
           for(let i=0; i < syncQueue.length; i++) {
               let action = syncQueue[i];
               if(action.type === 'updateStatus') {
-                  await supabase.from('orders').update({status: action.status}).eq('id', action.id);
+                  await supabase.from('orders').update({status: action.status}).eq('cafe_id', CAFE_ID).eq('id', action.id);
               }
           }
           syncQueue = []; 
@@ -525,7 +559,7 @@
 
   function setupRealtime() {
       if(realtimeSubscription) supabase.removeChannel(realtimeSubscription);
-      realtimeSubscription = supabase.channel('pos-orders-channel')
+      realtimeSubscription = supabase.channel(`pos-orders-${CAFE_ID}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
               fetchOrders();
           }).subscribe();
@@ -535,7 +569,7 @@
     if(!isBranchUnlocked || isOffline) return; 
     
     try {
-        let query = supabase.from('orders').select('*').in('status', ['Pending', 'تحضير', 'مُحضر', 'جاهز', 'Done', 'ملغي', 'Cancelled']).order('created_at', { ascending: false });
+        let query = supabase.from('orders').select('*').eq('cafe_id', CAFE_ID).in('status', ['Pending', 'تحضير', 'مُحضر', 'جاهز', 'Done', 'ملغي', 'Cancelled']).order('created_at', { ascending: false });
         if(myBranch !== 'all') query = query.ilike('branch_id', `%${myBranch}%`);
         
         const { data: orders, error } = await query;
@@ -627,12 +661,12 @@
 
   async function deductInventoryForOrder(orderId) {
       try {
-          const {data: order} = await supabase.from('orders').select('items_json').eq('id', orderId).single();
+          const {data: order} = await supabase.from('orders').select('items_json').eq('cafe_id', CAFE_ID).eq('id', orderId).single();
           if(!order) return;
           
           let items = typeof order.items_json === 'string' ? JSON.parse(order.items_json) : order.items_json;
           
-          const {data: menu} = await supabase.from('menu_items').select('name, recipe_notes');
+          const {data: menu} = await supabase.from('menu_items').select('name, recipe_notes').eq('cafe_id', CAFE_ID);
           let recipes = {};
           menu.forEach(m => { try { recipes[m.name] = JSON.parse(m.recipe_notes || '[]'); } catch(e){} });
 
@@ -654,21 +688,22 @@
           for(let ingName in usedIngredients) {
               const {data: branchItem} = await supabase.from('inventory')
                   .select('id, qty')
+                  .eq('cafe_id', CAFE_ID)
                   .eq('name', ingName)
                   .eq('branch_id', branchToDeduct)
                   .single();
                   
               if(branchItem) {
                   let newQty = branchItem.qty - usedIngredients[ingName];
-                  await supabase.from('inventory').update({qty: newQty}).eq('id', branchItem.id);
+                  await supabase.from('inventory').update({qty: newQty}).eq('cafe_id', CAFE_ID).eq('id', branchItem.id);
               } else {
-                  await supabase.from('inventory').insert([{
+                  await supabase.from('inventory').insert([{...{
                       name: ingName,
                       qty: -usedIngredients[ingName],
                       branch_id: branchToDeduct,
                       unit: 'غير محدد',
                       alert_qty: 0
-                  }]);
+                  }, cafe_id: CAFE_ID}]);
               }
           }
       } catch(e) { console.error("Inventory deduction error:", e); }
@@ -696,7 +731,7 @@
     if(isOffline) { 
         pushToActionQueue({ type: 'updateStatus', id: orderId, status: 'Done' }); 
     } else { 
-        await supabase.from('orders').update({status: 'Done'}).eq('id', orderId); 
+        await supabase.from('orders').update({status: 'Done'}).eq('cafe_id', CAFE_ID).eq('id', orderId); 
         deductInventoryForOrder(orderId);
         fetchOrders(); 
     }
@@ -724,7 +759,7 @@
     if(isOffline) { 
         pushToActionQueue({ type: 'updateStatus', id: orderId, status: 'ملغي' }); 
     } else { 
-        await supabase.from('orders').update({status: 'ملغي'}).eq('id', orderId); 
+        await supabase.from('orders').update({status: 'ملغي'}).eq('cafe_id', CAFE_ID).eq('id', orderId); 
         fetchOrders(); 
     }
   }
@@ -735,7 +770,7 @@
           const originalHtml = btn.innerHTML; 
           btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التنظيف...'; 
           
-          let query = supabase.from('orders').update({status: 'Archived'}).in('status', ['Done', 'جاهز', 'تم', 'ملغي', 'Cancelled']);
+          let query = supabase.from('orders').update({status: 'Archived'}).eq('cafe_id', CAFE_ID).in('status', ['Done', 'جاهز', 'تم', 'ملغي', 'Cancelled']);
           if(myBranch !== 'all') query = query.ilike('branch_id', `%${myBranch}%`);
           
           await query;
@@ -748,7 +783,7 @@
       const tbody = document.getElementById('customers-table'); 
       tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#666;"><i class="fas fa-circle-notch fa-spin fa-2x"></i><br><br>جاري تحميل البيانات...</td></tr>`; 
       
-      const { data: customers } = await supabase.from('customers').select('*').order('points', {ascending: false});
+      const { data: customers } = await supabase.from('customers').select('*').eq('cafe_id', CAFE_ID).order('points', {ascending: false});
       
       if (!customers || customers.length === 0) { 
           tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px;">لا يوجد عملاء مسجلين</td></tr>`; 
@@ -769,13 +804,13 @@
 
   async function resetPoints(id, name, phone) { 
       if (confirm(`تصفير نقاط العميل (${name})؟`)){ 
-          await supabase.from('customers').update({points: 0}).eq('id', id); 
+          await supabase.from('customers').update({points: 0}).eq('cafe_id', CAFE_ID).eq('id', id); 
           loadCustomers(); 
       } 
   }
   
   async function loadMenu() { 
-      let query = supabase.from('menu_items').select('*').order('created_at', {ascending: false});
+      let query = supabase.from('menu_items').select('*').eq('cafe_id', CAFE_ID).order('created_at', {ascending: false});
       if(myBranch !== 'all') query = query.eq('branch_id', myBranch);
       const {data: items} = await query;
       
@@ -809,7 +844,7 @@
   
   async function toggleStock(id, newStatus, btn) { 
       if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; } 
-      await supabase.from('menu_items').update({status: newStatus}).eq('id', id); 
+      await supabase.from('menu_items').update({status: newStatus}).eq('cafe_id', CAFE_ID).eq('id', id); 
       loadMenu(); 
   }
 
@@ -819,7 +854,7 @@
       
       if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; } 
       
-      await supabase.from('menu_items').update({price: newPrice}).eq('id', id); 
+      await supabase.from('menu_items').update({price: newPrice}).eq('cafe_id', CAFE_ID).eq('id', id); 
       
       if(btn) { 
           btn.innerHTML = '<i class="fas fa-check" style="color:var(--success);"></i>'; 
@@ -851,7 +886,7 @@
       const originalText = btn.innerHTML; 
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; 
       
-      await supabase.from('menu_items').insert([payload]);
+      await supabase.from('menu_items').insert([{...payload, cafe_id: CAFE_ID}]);
       
       alert('تم الإضافة بنجاح!'); 
       loadMenu(); 
@@ -867,14 +902,14 @@
   
   async function delItem(id) { 
       if(confirm('متأكد من الحذف؟')) { 
-          await supabase.from('menu_items').delete().eq('id', id); 
+          await supabase.from('menu_items').delete().eq('cafe_id', CAFE_ID).eq('id', id); 
           loadMenu(); 
       } 
   }
   
   async function fetchStartingBalance() { 
       document.getElementById('sc-starting-balance').innerText = "جاري التحميل..."; 
-      const { data } = await supabase.from('shift_reports').select('kept_for_next').eq('branch_id', myBranch).order('created_at', {ascending: false}).limit(1).single();
+      const { data } = await supabase.from('shift_reports').select('kept_for_next').eq('cafe_id', CAFE_ID).eq('branch_id', myBranch).order('created_at', {ascending: false}).limit(1).single();
       startingBalanceAmount = data ? parseFloat(data.kept_for_next) : 0; 
       document.getElementById('sc-starting-balance').innerText = startingBalanceAmount + " ج.م"; 
       calculateSystemCash(); 
@@ -1028,7 +1063,7 @@
       btn.disabled = true; 
       
       try {
-          await supabase.from('shift_reports').insert([payload]);
+          await supabase.from('shift_reports').insert([{...payload, cafe_id: CAFE_ID}]);
           alert("تم اعتماد تقفيل الشيفت بنجاح وتم الإرسال للإدارة ✅"); 
           currentExpenses = []; 
           renderExpenses(); 
