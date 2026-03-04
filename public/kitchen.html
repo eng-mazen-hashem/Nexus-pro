@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus KDS - شاشة المطبخ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root { 
+        --bg: #050505; --card: #111; --card-border: #333;
+        --gold: #D4AF37; --danger: #ff4757; --warning: #f1c40f; --success: #00ff88; 
+        --text: #fff; --text-muted: #888;
+    }
+    
+    * { box-sizing: border-box; outline: none; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    
+    /* Header */
+    header { 
+        display: flex; justify-content: space-between; align-items: center; 
+        background: rgba(17, 17, 17, 0.9); padding: 15px 30px; border-bottom: 2px solid var(--gold); 
+        box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 10;
+    }
+    header h1 { margin: 0; color: var(--gold); font-size: 1.8rem; font-weight: 900; letter-spacing: 1px; }
+    .header-actions { display: flex; gap: 15px; align-items: center; }
+    
+    .sound-btn { 
+        background: transparent; border: 1px solid var(--danger); color: var(--danger); 
+        padding: 8px 20px; border-radius: 50px; cursor: pointer; font-family: 'Cairo'; font-weight: bold; transition: 0.3s; 
+    }
+    .sound-btn.enabled { border-color: var(--success); color: var(--success); background: rgba(0,255,136,0.1); }
+    .clock { font-size: 1.5rem; font-weight: bold; font-family: monospace; letter-spacing: 2px; }
+
+    /* Grid Area */
+    .board { 
+        flex: 1; padding: 20px; overflow-y: auto; overflow-x: hidden;
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+        gap: 20px; align-content: start;
+    }
+    
+    /* Ticket Styles */
+    .ticket { 
+        background: var(--card); border: 2px solid var(--card-border); border-radius: 16px; 
+        display: flex; flex-direction: column; overflow: hidden; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .t-header { 
+        padding: 15px; border-bottom: 2px dashed #333; display: flex; justify-content: space-between; align-items: flex-start;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+    }
+    .t-id { font-size: 1.5rem; font-weight: 900; color: var(--gold); line-height: 1; }
+    .t-type { font-size: 0.9rem; color: var(--text-muted); margin-top: 5px; }
+    
+    .t-timer { 
+        font-family: monospace; font-size: 1.3rem; font-weight: bold; background: rgba(0,255,136,0.1); 
+        color: var(--success); padding: 5px 12px; border-radius: 8px; border: 1px solid var(--success); 
+    }
+    .timer-warn { background: rgba(241,196,15,0.1); color: var(--warning); border-color: var(--warning); animation: pulse 2s infinite; }
+    .timer-danger { background: rgba(255,71,87,0.1); color: var(--danger); border-color: var(--danger); animation: pulseFast 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.7; } }
+    @keyframes pulseFast { 50% { opacity: 0.5; box-shadow: 0 0 10px var(--danger); } }
+
+    .t-body { padding: 15px; flex-grow: 1; font-size: 1.2rem; line-height: 1.6; }
+    .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; }
+    .item-qty { font-weight: 900; color: var(--gold); margin-left: 10px; background: rgba(212,175,55,0.1); padding: 2px 8px; border-radius: 6px; }
+    .item-name { flex: 1; }
+    
+    /* Recipe Button (The Magic Feature) */
+    .btn-recipe {
+        background: rgba(52, 152, 219, 0.1); border: 1px solid var(--info); color: var(--info);
+        width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+        cursor: pointer; transition: 0.2s; font-size: 1rem; flex-shrink: 0;
+    }
+    .btn-recipe:active { transform: scale(0.9); background: var(--info); color: #fff; }
+
+    .t-notes { background: rgba(241,196,15,0.1); color: var(--warning); padding: 10px; border-radius: 8px; font-size: 1rem; margin-top: 10px; border: 1px dashed var(--warning); }
+    
+    .t-footer { padding: 15px; background: #0a0a0a; border-top: 1px solid #222; }
+    .btn-bump { 
+        width: 100%; background: var(--success); color: #000; border: none; padding: 15px; 
+        font-size: 1.3rem; font-weight: 900; font-family: 'Cairo'; border-radius: 12px; 
+        cursor: pointer; transition: 0.2s; box-shadow: 0 5px 15px rgba(0,255,136,0.2); 
+    }
+    .btn-bump:active { transform: scale(0.97); }
+
+    /* Recipe Modal for Chef */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+    .recipe-card { background: #151515; width: 90%; max-width: 500px; border-radius: 20px; border: 2px solid var(--info); overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+    .recipe-header { background: var(--info); color: #fff; padding: 20px; font-size: 1.5rem; font-weight: 900; text-align: center; display: flex; justify-content: space-between; align-items: center; }
+    .recipe-list { padding: 20px; max-height: 400px; overflow-y: auto; }
+    .recipe-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px dashed #333; font-size: 1.2rem; }
+    .recipe-item:last-child { border: none; }
+    .recipe-qty { color: var(--gold); font-weight: 900; font-family: monospace; font-size: 1.4rem; background: rgba(212,175,55,0.1); padding: 5px 15px; border-radius: 8px; }
+    
+    /* Offline/Disabled States */
+    .system-msg { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); z-index: 50; }
+    .system-msg i { font-size: 5rem; color: var(--danger); margin-bottom: 20px; }
+    .system-msg h2 { color: #fff; font-size: 2rem; }
+
+    ::-webkit-scrollbar { display: none; } /* إخفاء شريط التمرير لشاشات اللمس */
+  </style>
+</head>
+<body>
+
+<audio id="bell" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3" preload="auto"></audio>
+
+<header>
+  <div>
+      <h1><i class="fas fa-fire" style="color:var(--danger); margin-left:10px;"></i> NEXUS KDS</h1>
+      <div style="color:var(--text-muted); font-size:0.9rem;" id="branch-display">جاري التحميل...</div>
+  </div>
+  <div class="header-actions">
+      <div class="clock" id="clock">00:00</div>
+      <button id="btn-sound" class="sound-btn" onclick="enableSound()"><i class="fas fa-volume-mute"></i> تفعيل التنبيه</button>
+  </div>
+</header>
+
+<div class="board" id="board">
+  <div style="grid-column: 1/-1; text-align: center; padding-top: 100px; color: #555;">
+      <i class="fas fa-circle-notch fa-spin fa-3x"></i>
+      <h2 style="margin-top:20px;">جاري الاتصال بالمطبخ...</h2>
+  </div>
+</div>
+
+<div class="modal-overlay" id="recipe-modal">
+    <div class="recipe-card">
+        <div class="recipe-header">
+            <span><i class="fas fa-book-open"></i> مقادير: <span id="r-title"></span></span>
+            <i class="fas fa-times" style="cursor:pointer;" onclick="closeRecipe()"></i>
+        </div>
+        <div class="recipe-list" id="r-list">
+            </div>
+        <div style="padding: 15px;">
+            <button style="width:100%; padding:15px; background:#333; color:#fff; border:none; border-radius:12px; font-family:'Cairo'; font-weight:bold; font-size:1.2rem; cursor:pointer;" onclick="closeRecipe()">إغلاق</button>
+        </div>
+    </div>
+</div>
+
+<div id="disabled-msg" class="system-msg" style="display:none;">
+    <i class="fas fa-power-off"></i>
+    <h2>نظام المطبخ (KDS) معطل حالياً</h2>
+    <p style="color:#888;">تم إيقاف هذه الميزة من قبل الإدارة المركزية.</p>
+</div>
+
+<script type="module">
+  import { supabase } from './js/supabaseClient.js';
+
+  // تحديد الفرع من الرابط
+  const urlParams = new URLSearchParams(window.location.search);
+  let myBranch = urlParams.get('branch') || 'all';
+  
+  let soundEnabled = false;
+  let menuRecipes = {}; // لحفظ الوصفات { "قهوة": [{name:"بن", qty:18}] }
+  let realtimeSubscription = null;
+  let lastTicketCount = 0;
+
+  window.onload = async () => {
+      document.getElementById('branch-display').innerText = (myBranch === 'all') ? 'كل الفروع (عام)' : myBranch.replace(/_/g, ' ');
+      startClock();
+      await checkSystemStatus();
+  };
+
+  function startClock() {
+      setInterval(() => {
+          const now = new Date();
+          document.getElementById('clock').innerText = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+      }, 1000);
+  }
+
+  function enableSound() {
+      const audio = document.getElementById('bell');
+      const btn = document.getElementById('btn-sound');
+      audio.play().then(() => {
+          soundEnabled = true;
+          btn.classList.add('enabled');
+          btn.innerHTML = '<i class="fas fa-volume-up"></i> الصوت مفعل';
+      }).catch(e => alert("يرجى التفاعل مع الشاشة أولاً لتشغيل الصوت."));
+  }
+
+  async function checkSystemStatus() {
+      try {
+          // 1. فحص هل الـ KDS مفعل من المطورين؟
+          const { data: settings } = await supabase.from('tenant_settings').select('value').eq('cafe_id', CAFE_ID).eq('key', 'options').single();
+          if (settings && settings.value && (settings.value.Feature_KDS === false || settings.value.Feature_KDS === 'false')) {
+              document.getElementById('disabled-msg').style.display = 'flex';
+              return; // إيقاف العمل تماماً
+          }
+
+          // 2. جلب المنيو لاستخراج الوصفات (BOM) سراً
+          const { data: menu } = await supabase.from('menu_items').select('name, recipe_notes').eq('cafe_id', CAFE_ID);
+          if(menu) {
+              menu.forEach(item => {
+                  try {
+                      // تحويل النص المحفوظ في قاعدة البيانات إلى مصفوفة، وتجاهل أي سعر
+                      let recipe = JSON.parse(item.recipe_notes || '[]');
+                      if(Array.isArray(recipe) && recipe.length > 0) {
+                          menuRecipes[item.name.trim()] = recipe.map(r => ({ name: r.name, qty: r.qty }));
+                      }
+                  } catch(e) {}
+              });
+          }
+
+          // 3. جلب الطلبات وتشغيل الـ Realtime
+          fetchKitchenOrders();
+          setupRealtime();
+
+          // 4. تشغيل تحديث العدادات كل ثانية
+          setInterval(updateTimers, 1000);
+
+      } catch(e) {
+          console.error("Error loading KDS init data:", e);
+      }
+  }
+
+  function setupRealtime() {
+      if(realtimeSubscription) supabase.removeChannel(realtimeSubscription);
+      
+      realtimeSubscription = supabase.channel('kds-channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, payload => {
+              fetchKitchenOrders();
+          }).subscribe();
+  }
+
+  async function fetchKitchenOrders() {
+      try {
+          let query = supabase.from('orders')
+              .select('*')
+              .eq('cafe_id', CAFE_ID)
+              .in('status', ['Pending', 'تحضير']) // المطبخ يرى فقط الطلبات الجديدة
+              .order('created_at', { ascending: true }); // الأقدم يظهر أولاً
+
+          if(myBranch !== 'all') query = query.ilike('branch_id', `%${myBranch}%`);
+          
+          const { data: orders, error } = await query;
+          if (error) throw error;
+
+          const board = document.getElementById('board');
+          
+          // تشغيل الصوت إذا جاء طلب جديد
+          if (orders && orders.length > lastTicketCount && soundEnabled) {
+              document.getElementById('bell').play().catch(e=>{});
+          }
+          lastTicketCount = orders ? orders.length : 0;
+
+          if (!orders || orders.length === 0) {
+              board.innerHTML = `
+                  <div style="grid-column: 1/-1; text-align: center; padding-top: 150px; color: #333;">
+                      <i class="fas fa-mug-hot fa-5x" style="margin-bottom:20px;"></i>
+                      <h1 style="font-family:'Cairo';">المطبخ هادئ... لا توجد طلبات.</h1>
+                  </div>`;
+              return;
+          }
+
+          board.innerHTML = orders.map(o => {
+              // تحديد نوع الطلب من الـ branch_id (مثلاً: طاولة 5 أو تيك أوي)
+              let locDetails = String(o.branch_id || '');
+              if(myBranch !== 'all') locDetails = locDetails.replace(myBranch + ' - ', '').trim();
+              
+              // تحويل عناصر السلة إلى HTML مع فحص زر الوصفة
+              let itemsHtml = '';
+              try {
+                  let parsedItems = typeof o.items_json === 'string' ? JSON.parse(o.items_json) : o.items_json;
+                  for(let key in parsedItems) {
+                      // استخراج الاسم الصافي (بدون الإضافات الموجودة بين أقواس) للبحث في الوصفات
+                      let cleanName = key.split('(')[0].split('[')[0].trim();
+                      let qty = parsedItems[key].qty;
+                      
+                      let recipeBtn = '';
+                      if (menuRecipes[cleanName]) {
+                          recipeBtn = `<button class="btn-recipe" onclick="showRecipe('${cleanName}')"><i class="fas fa-book-open"></i></button>`;
+                      }
+
+                      itemsHtml += `
+                          <div class="item-row">
+                              <span class="item-qty">${qty}x</span>
+                              <span class="item-name">${key}</span>
+                              ${recipeBtn}
+                          </div>`;
+                  }
+              } catch(e) { itemsHtml = 'خطأ في قراءة مكونات الطلب'; }
+
+              return `
+              <div class="ticket" id="ticket-${o.id}">
+                  <div class="t-header">
+                      <div>
+                          <div class="t-id">#${String(o.id).substring(0,8)}</div>
+                          <div class="t-type"><i class="fas fa-map-marker-alt" style="color:var(--info);"></i> ${locDetails || 'استلام'}</div>
+                      </div>
+                      <div class="t-timer" data-time="${new Date(o.created_at).getTime()}">0:00</div>
+                  </div>
+                  <div class="t-body">
+                      ${itemsHtml}
+                      ${o.notes ? `<div class="t-notes"><i class="fas fa-exclamation-triangle"></i> ${o.notes}</div>` : ''}
+                  </div>
+                  <div class="t-footer">
+                      <button class="btn-bump" onclick="bumpOrder('${o.id}', this)">
+                          <i class="fas fa-check-double"></i> تم التحضير
+                      </button>
+                  </div>
+              </div>`;
+          }).join('');
+          
+          updateTimers();
+
+      } catch (err) {
+          console.error("Error fetching KDS orders:", err);
+      }
+  }
+
+  // تحديث ألوان العدادات باستمرار
+  function updateTimers() {
+      const now = new Date().getTime();
+      document.querySelectorAll('.t-timer').forEach(timer => {
+          let orderTime = parseInt(timer.getAttribute('data-time')); 
+          if(isNaN(orderTime)) return;
+          
+          let diffMinutes = Math.floor((now - orderTime) / 60000); 
+          let diffSeconds = Math.floor(((now - orderTime) % 60000) / 1000);
+          
+          timer.innerText = `${diffMinutes}:${diffSeconds < 10 ? '0' : ''}${diffSeconds} د`;
+          
+          // تغيير اللون حسب التأخير (5 دقائق أصفر، 10 دقائق أحمر)
+          if (diffMinutes >= 10) { 
+              timer.className = 't-timer timer-danger'; 
+          } else if (diffMinutes >= 5) { 
+              timer.className = 't-timer timer-warn'; 
+          } else {
+              timer.className = 't-timer';
+          }
+      });
+  }
+
+  // دالة الإبلاغ بانتهاء التحضير (تحديث الحالة للكاشير)
+  async function bumpOrder(orderId, btnElement) {
+      const origHtml = btnElement.innerHTML;
+      btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> إرسال للكاشير...';
+      btnElement.style.background = 'var(--warning)';
+      
+      try {
+          await supabase.from('orders').update({ status: 'مُحضر' }).eq('cafe_id', CAFE_ID).eq('id', orderId);
+          // سيتكفل الـ Realtime بإخفاء التيكت من الشاشة تلقائياً بمجرد نجاح التحديث
+      } catch(e) {
+          alert("حدث خطأ في الاتصال بالإنترنت.");
+          btnElement.innerHTML = origHtml;
+          btnElement.style.background = 'var(--success)';
+      }
+  }
+
+  // دالة عرض نافذة المقادير السرية للشيف (بدون أي أموال أو أسعار)
+  function showRecipe(itemName) {
+      const recipeArray = menuRecipes[itemName];
+      if(!recipeArray) return;
+
+      document.getElementById('r-title').innerText = itemName;
+      
+      const listHtml = recipeArray.map(ing => `
+          <div class="recipe-item">
+              <span style="color:#ddd;">${ing.name}</span>
+              <span class="recipe-qty">${ing.qty}</span>
+          </div>
+      `).join('');
+      
+      document.getElementById('r-list').innerHTML = listHtml;
+      document.getElementById('recipe-modal').style.display = 'flex';
+  }
+
+  function closeRecipe() {
+      document.getElementById('recipe-modal').style.display = 'none';
+  }
+
+  // ربط الدوال بالـ Window
+  window.enableSound = enableSound;
+  window.bumpOrder = bumpOrder;
+  window.showRecipe = showRecipe;
+  window.closeRecipe = closeRecipe;
+
+</script>
+</body>
+</html>

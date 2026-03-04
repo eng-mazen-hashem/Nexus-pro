@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تهيئة نظام Lacazza</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; background: #0a0a0a; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .box { background: #161616; padding: 40px; border-radius: 16px; border: 1px solid #D4AF37; text-align: center; max-width: 500px; box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2); }
+    h1 { color: #D4AF37; margin-top: 0; }
+    button { background: #D4AF37; color: #000; border: none; padding: 15px 30px; font-size: 1.2rem; font-family: 'Cairo'; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; margin-top: 20px; }
+    button:hover { transform: scale(1.05); }
+    #status { margin-top: 20px; color: #aaa; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h1>🚀 مهندس النظام: تهيئة فايربيز</h1>
+    <p>هذا السكربت سيقوم بإنشاء هيكلة الإعدادات (البديلة للشيتات: Options, setting, info) وتجهيز عداد الطلبات ليبدأ من 100.</p>
+    <button id="btn-setup" onclick="runSetup()">ابدأ بناء قاعدة البيانات</button>
+    <div id="status"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6I3DmUindVI1_-k8YvTWBQho_acbsUJU",
+      authDomain: "smartmenu-e4315.firebaseapp.com",
+      projectId: "smartmenu-e4315",
+      storageBucket: "smartmenu-e4315.firebasestorage.app",
+      messagingSenderId: "508036931515",
+      appId: "1:508036931515:web:de95b33fd70af1b7086e9e",
+      measurementId: "G-KJ0T3CS4QT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.runSetup = async function() {
+      const statusDiv = document.getElementById('status');
+      const btn = document.getElementById('btn-setup');
+      btn.disabled = true;
+      statusDiv.innerHTML = "⏳ جاري بناء الهيكلة... الرجاء الانتظار";
+
+      try {
+        // 1. شيت الإعدادات العامة (Options) و (Admin)
+        await setDoc(doc(db, "Settings", "Admin"), { password: "1234" });
+        await setDoc(doc(db, "Settings", "General"), {
+          Branches_List: ["الفرع الرئيسي", "تيك أواي"],
+          Default_Branch: "الفرع الرئيسي",
+          Enable_InstaPay: "مفعل",
+          InstaPay_Address: "lacazza@instapay",
+          showAllCategory: "true"
+        });
+
+        // 2. شيت تنظيم المينيو والطاولات (setting)
+        await setDoc(doc(db, "Settings", "UI_Structure"), {
+          Categories: ["مشروبات ساخنة", "مشروبات باردة", "حلى ومخبوزات", "وجبات"],
+          Locations: {
+            "الفرع الرئيسي": ["طاولة 1", "طاولة 2", "طاولة 3"],
+            "تيك أواي": ["بدون طاولة"]
+          }
+        });
+
+        // 3. شيت الهوية البصرية (info)
+        await setDoc(doc(db, "Settings", "Identity"), {
+          logo: "https://cdn-icons-png.flaticon.com/512/751/751621.png",
+          deco: "", // ضع رابط الزينة هنا إن وجد
+          order_phone: "01000000000"
+        });
+
+        // 4. عداد الطلبات (Orders)
+        await setDoc(doc(db, "Counters", "orderCounter"), {
+          lastOrderNumber: 100
+        });
+
+        statusDiv.innerHTML = "✅ تم بناء قاعدة البيانات بنجاح! يمكنك الآن إغلاق هذه الصفحة.";
+        statusDiv.style.color = "#00ff88";
+      } catch (e) {
+        console.error(e);
+        statusDiv.innerHTML = "❌ حدث خطأ: " + e.message;
+        statusDiv.style.color = "#ff4d4d";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — User Flow & Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060608;
+  --s1: #0e0e12;
+  --s2: #141418;
+  --border: rgba(255,255,255,0.06);
+  --gold: #D4AF37;
+  --gold2: #f0c830;
+  --gold-d: rgba(212,175,55,0.1);
+  --red: #ff4757;
+  --green: #00e676;
+  --blue: #448aff;
+  --purple: #b388ff;
+  --orange: #ff9800;
+  --cyan: #00bcd4;
+  --text: #f0f0f0;
+  --muted: #555;
+  --muted2: #888;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(6,6,8,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 40px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{font-size:1.3rem;font-weight:900;color:var(--gold);letter-spacing:2px;}
+.nav-tabs{display:flex;gap:8px;}
+.nav-tab{padding:8px 18px;border-radius:50px;border:1px solid var(--border);background:transparent;color:var(--muted2);font-family:'Cairo';font-size:0.85rem;cursor:pointer;transition:0.2s;font-weight:600;}
+.nav-tab.active,.nav-tab:hover{background:var(--gold-d);color:var(--gold);border-color:rgba(212,175,55,0.3);}
+
+/* SECTIONS */
+.section{display:none;padding:50px 40px;max-width:1300px;margin:0 auto;}
+.section.active{display:block;animation:fadeIn 0.4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+
+.section-hero{text-align:center;margin-bottom:60px;}
+.section-hero h1{font-size:2.4rem;font-weight:900;margin-bottom:10px;}
+.section-hero h1 span{color:var(--gold);}
+.section-hero p{color:var(--muted2);font-size:1rem;max-width:600px;margin:0 auto;}
+
+/* ═══════════════════════════════════════
+   TAB 1 — ROLES
+═══════════════════════════════════════ */
+.roles-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:40px;}
+.role-card{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:28px;position:relative;overflow:hidden;transition:0.3s;cursor:default;}
+.role-card:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,0.5);}
+.role-card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;}
+.role-card.customer::before{background:linear-gradient(90deg,var(--cyan),var(--blue));}
+.role-card.cashier::before{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+.role-card.kitchen::before{background:linear-gradient(90deg,var(--red),var(--orange));}
+.role-card.warehouse::before{background:linear-gradient(90deg,var(--green),var(--cyan));}
+.role-card.manager::before{background:linear-gradient(90deg,var(--purple),var(--blue));}
+.role-card.owner::before{background:linear-gradient(90deg,var(--gold),var(--purple));}
+
+.role-icon{font-size:2.2rem;margin-bottom:14px;display:block;}
+.role-title{font-size:1.15rem;font-weight:900;margin-bottom:6px;}
+.role-page{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;color:var(--muted2);background:rgba(0,0,0,0.4);padding:4px 10px;border-radius:6px;border:1px solid var(--border);display:inline-block;margin-bottom:14px;}
+.role-desc{color:#aaa;font-size:0.88rem;line-height:1.7;margin-bottom:16px;}
+.role-perms{display:flex;flex-direction:column;gap:6px;}
+.perm{display:flex;align-items:center;gap:8px;font-size:0.83rem;color:#ccc;}
+.perm-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.customer .perm-dot{background:var(--cyan);}
+.cashier .perm-dot{background:var(--gold);}
+.kitchen .perm-dot{background:var(--red);}
+.warehouse .perm-dot{background:var(--green);}
+.manager .perm-dot{background:var(--purple);}
+.owner .perm-dot{background:var(--gold);}
+
+/* ═══════════════════════════════════════
+   TAB 2 — FLOW
+═══════════════════════════════════════ */
+.flow-container{display:flex;flex-direction:column;gap:0;}
+
+.flow-step{display:grid;grid-template-columns:60px 1fr;gap:0;position:relative;}
+.flow-line{display:flex;flex-direction:column;align-items:center;padding-top:4px;}
+.flow-dot{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;position:relative;z-index:1;}
+.flow-connector{width:2px;flex:1;min-height:30px;margin:4px 0;}
+
+.flow-body{padding:0 0 36px 24px;}
+.flow-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding-top:8px;}
+.flow-num{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--muted2);}
+.flow-title{font-size:1.1rem;font-weight:800;}
+.flow-who{padding:3px 12px;border-radius:50px;font-size:0.75rem;font-weight:700;}
+.flow-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.flow-card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:16px;font-size:0.85rem;color:#ccc;line-height:1.6;}
+.flow-card strong{display:block;color:var(--text);font-weight:700;margin-bottom:4px;font-size:0.9rem;}
+
+/* colors per actor */
+.actor-customer .flow-dot{background:rgba(0,188,212,0.15);border:2px solid var(--cyan);color:var(--cyan);}
+.actor-customer .flow-connector{background:linear-gradient(var(--cyan),rgba(0,188,212,0.1));}
+.actor-customer .flow-who{background:rgba(0,188,212,0.1);color:var(--cyan);border:1px solid rgba(0,188,212,0.25);}
+
+.actor-cashier .flow-dot{background:rgba(212,175,55,0.15);border:2px solid var(--gold);color:var(--gold);}
+.actor-cashier .flow-connector{background:linear-gradient(var(--gold),rgba(212,175,55,0.1));}
+.actor-cashier .flow-who{background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,175,55,0.3);}
+
+.actor-kitchen .flow-dot{background:rgba(255,71,87,0.15);border:2px solid var(--red);color:var(--red);}
+.actor-kitchen .flow-connector{background:linear-gradient(var(--red),rgba(255,71,87,0.1));}
+.actor-kitchen .flow-who{background:rgba(255,71,87,0.1);color:var(--red);border:1px solid rgba(255,71,87,0.25);}
+
+.actor-system .flow-dot{background:rgba(179,136,255,0.15);border:2px solid var(--purple);color:var(--purple);}
+.actor-system .flow-connector{background:linear-gradient(var(--purple),rgba(179,136,255,0.1));}
+.actor-system .flow-who{background:rgba(179,136,255,0.1);color:var(--purple);border:1px solid rgba(179,136,255,0.25);}
+
+.actor-manager .flow-dot{background:rgba(0,230,118,0.15);border:2px solid var(--green);color:var(--green);}
+.actor-manager .flow-connector{background:linear-gradient(var(--green),rgba(0,230,118,0.1));}
+.actor-manager .flow-who{background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.25);}
+
+/* ═══════════════════════════════════════
+   TAB 3 — PAGES
+═══════════════════════════════════════ */
+.pages-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.page-card{background:var(--s1);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.page-header{padding:20px 24px 16px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);}
+.page-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.page-name{font-size:1.05rem;font-weight:800;}
+.page-file{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--muted2);}
+.page-body{padding:20px 24px;}
+.page-purpose{color:#aaa;font-size:0.88rem;line-height:1.7;margin-bottom:14px;}
+.page-features{display:flex;flex-direction:column;gap:6px;}
+.page-feat{display:flex;align-items:flex-start;gap:10px;font-size:0.83rem;color:#bbb;line-height:1.5;}
+.feat-icon{flex-shrink:0;font-size:0.9rem;margin-top:1px;}
+.page-who-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.who-tag{padding:3px 10px;border-radius:50px;font-size:0.72rem;font-weight:700;}
+
+/* ═══════════════════════════════════════
+   TAB 4 — BEST PRACTICES
+═══════════════════════════════════════ */
+.practices-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.practice-card{background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:24px;}
+.practice-num{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--muted2);margin-bottom:10px;}
+.practice-title{font-size:1.05rem;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.practice-body{color:#aaa;font-size:0.88rem;line-height:1.8;}
+.practice-body b{color:var(--text);}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+.compare-col{background:rgba(0,0,0,0.3);border-radius:10px;padding:12px;}
+.compare-label{font-size:0.72rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.compare-item{font-size:0.8rem;color:#bbb;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);line-height:1.5;}
+.compare-item:last-child{border:none;}
+
+@media(max-width:768px){
+  .roles-grid{grid-template-columns:1fr;}
+  .pages-grid{grid-template-columns:1fr;}
+  .practices-grid{grid-template-columns:1fr;}
+  .nav{padding:12px 16px;}
+  .section{padding:30px 16px;}
+  .nav-tabs{gap:4px;}
+  .nav-tab{padding:6px 10px;font-size:0.78rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">☕ NEXUS</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="show('roles',this)">👥 الأدوار</button>
+    <button class="nav-tab" onclick="show('flow',this)">🔄 سير العمل</button>
+    <button class="nav-tab" onclick="show('pages',this)">📄 الصفحات</button>
+    <button class="nav-tab" onclick="show('practices',this)">⭐ أفضل الممارسات</button>
+  </div>
+</nav>
+
+<!-- ═══ TAB 1: ROLES ═══ -->
+<div class="section active" id="tab-roles">
+  <div class="section-hero">
+    <h1>الأدوار داخل <span>المقهى</span></h1>
+    <p>كل موظف له دور محدد وصفحة خاصة — لا أحد يرى ما لا يخصه</p>
+  </div>
+
+  <div class="roles-grid">
+
+    <div class="role-card customer">
+      <span class="role-icon">👤</span>
+      <div class="role-title">الزبون</div>
+      <div class="role-page">index.html</div>
+      <div class="role-desc">يفتح الموقع من QR Code على الطاولة — يتصفح المنيو ويطلب مباشرة بدون تحميل أي app.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>تصفح المنيو بالصور والأسعار</div>
+        <div class="perm"><div class="perm-dot"></div>إضافة طلب وتخصيصه</div>
+        <div class="perm"><div class="perm-dot"></div>تتبع حالة الطلب لحظياً</div>
+        <div class="perm"><div class="perm-dot"></div>نقاط الولاء والمكافآت</div>
+        <div class="perm"><div class="perm-dot"></div>تقييم التجربة بعد الطلب</div>
+      </div>
+    </div>
+
+    <div class="role-card cashier">
+      <span class="role-icon">🧾</span>
+      <div class="role-title">الكاشير</div>
+      <div class="role-page">dashboard.html</div>
+      <div class="role-desc">يستقبل الطلبات ويديرها — يغلق اليومية ويتابع الحالة اللحظية للطلبات.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>رؤية وإدارة الطلبات الواردة</div>
+        <div class="perm"><div class="perm-dot"></div>تغيير حالة الطلب</div>
+        <div class="perm"><div class="perm-dot"></div>تقفيل اليومية والعهدة</div>
+        <div class="perm"><div class="perm-dot"></div>إضافة مصروفات نثرية</div>
+        <div class="perm"><div class="perm-dot"></div>❌ لا يرى التقارير المالية</div>
+      </div>
+    </div>
+
+    <div class="role-card kitchen">
+      <span class="role-icon">👨‍🍳</span>
+      <div class="role-title">المطبخ / الباريستا</div>
+      <div class="role-page">kitchen.html</div>
+      <div class="role-desc">شاشة KDS مخصصة للمطبخ — يرى الطلبات فقط بدون أي معلومات مالية أو إدارية.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>رؤية الطلبات الواردة لحظياً</div>
+        <div class="perm"><div class="perm-dot"></div>تأكيد التحضير (Bump)</div>
+        <div class="perm"><div class="perm-dot"></div>عرض وصفة الصنف</div>
+        <div class="perm"><div class="perm-dot"></div>مؤقت وقت التحضير</div>
+        <div class="perm"><div class="perm-dot"></div>❌ لا يرى الأسعار أو العملاء</div>
+      </div>
+    </div>
+
+    <div class="role-card warehouse">
+      <span class="role-icon">📦</span>
+      <div class="role-title">مسؤول المخزن</div>
+      <div class="role-page">warehouse.html</div>
+      <div class="role-desc">يتابع المخزون ويستلم البضاعة — يرسل تنبيهات للمدير عند نفاد المواد.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>إدارة المخزون والكميات</div>
+        <div class="perm"><div class="perm-dot"></div>تسجيل الاستلام من الموردين</div>
+        <div class="perm"><div class="perm-dot"></div>تحويل مواد بين الفروع</div>
+        <div class="perm"><div class="perm-dot"></div>تنبيهات نفاد المخزون</div>
+        <div class="perm"><div class="perm-dot"></div>❌ لا يرى المبيعات أو الطلبات</div>
+      </div>
+    </div>
+
+    <div class="role-card manager">
+      <span class="role-icon">📊</span>
+      <div class="role-title">المدير / صاحب الفرع</div>
+      <div class="role-page">master_admin.html</div>
+      <div class="role-desc">يرى كل شيء — التقارير، المبيعات، أداء الفروع، إدارة المنيو والموظفين.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>تقارير مالية تفصيلية</div>
+        <div class="perm"><div class="perm-dot"></div>إدارة المنيو والأسعار</div>
+        <div class="perm"><div class="perm-dot"></div>مقارنة أداء الفروع</div>
+        <div class="perm"><div class="perm-dot"></div>إدارة كلمات مرور الموظفين</div>
+        <div class="perm"><div class="perm-dot"></div>بيانات العملاء والنقاط</div>
+      </div>
+    </div>
+
+    <div class="role-card owner">
+      <span class="role-icon">🛠️</span>
+      <div class="role-title">المطور / Super Admin</div>
+      <div class="role-page">dev_panel.html</div>
+      <div class="role-desc">أنت — تدير كل المقاهي المشتركة في النظام، وترى بيانات كل tenant.</div>
+      <div class="role-perms">
+        <div class="perm"><div class="perm-dot"></div>إنشاء مقاهي جديدة (tenants)</div>
+        <div class="perm"><div class="perm-dot"></div>إدارة الاشتراكات والخطط</div>
+        <div class="perm"><div class="perm-dot"></div>مراقبة صحة النظام</div>
+        <div class="perm"><div class="perm-dot"></div>إعدادات متقدمة لكل مقهى</div>
+        <div class="perm"><div class="perm-dot"></div>الوصول لكل البيانات</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ TAB 2: FLOW ═══ -->
+<div class="section" id="tab-flow">
+  <div class="section-hero">
+    <h1>سير العمل <span>الكامل</span></h1>
+    <p>من لحظة دخول الزبون حتى إغلاق اليومية — كل خطوة وكل دور</p>
+  </div>
+
+  <div class="flow-container">
+
+    <div class="flow-step actor-customer">
+      <div class="flow-line">
+        <div class="flow-dot">👤</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-header">
+          <span class="flow-num">01</span>
+          <span class="flow-title">الزبون يدخل ويطلب</span>
+          <span class="flow-who">الزبون — index.html</span>
+        </div>
+        <div class="flow-cards">
+          <div class="flow-card"><strong>📱 يمسح QR Code</strong>الموجود على الطاولة أو عند المدخل — يفتح المنيو فوراً بدون تسجيل دخول</div>
+          <div class="flow-card"><strong>🛒 يختار الأصناف</strong>يتصفح الكاتيغوريز، يضيف للسلة، يختار التفضيلات المجانية</div>
+          <div class="flow-card"><strong>📝 يكمّل الطلب</strong>يدخل اسمه ورقمه، يختار الطاولة أو التيك أواي، يضغط إرسال</div>
+          <div class="flow-card"><strong>⏳ يتابع الحالة</strong>تظهر له شاشة تتبع لحظية — يرى متى طلبه جاهز</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step actor-cashier">
+      <div class="flow-line">
+        <div class="flow-dot">🧾</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-header">
+          <span class="flow-num">02</span>
+          <span class="flow-title">الكاشير يستقبل الطلب</span>
+          <span class="flow-who">الكاشير — dashboard.html</span>
+        </div>
+        <div class="flow-cards">
+          <div class="flow-card"><strong>🔔 تنبيه فوري</strong>يصدر صوت وتظهر بطاقة الطلب الجديد تلقائياً بدون تحديث الصفحة</div>
+          <div class="flow-card"><strong>👁️ يراجع الطلب</strong>يتحقق من الأصناف والملاحظات والطاولة — يبدأ التحضير</div>
+          <div class="flow-card"><strong>✅ يغير الحالة</strong>يضغط "قيد التحضير" → يبدأ المطبخ العمل فوراً</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step actor-kitchen">
+      <div class="flow-line">
+        <div class="flow-dot">👨‍🍳</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-header">
+          <span class="flow-num">03</span>
+          <span class="flow-title">المطبخ يحضّر الطلب</span>
+          <span class="flow-who">الباريستا — kitchen.html</span>
+        </div>
+        <div class="flow-cards">
+          <div class="flow-card"><strong>📋 شاشة KDS</strong>يرى تذاكر الطلبات مرتبة بالوقت — الأقدم يظهر أولاً بلون تحذيري</div>
+          <div class="flow-card"><strong>📖 وصفة الصنف</strong>يضغط على أي صنف يرى وصفته ومكوناته — مفيد للموظفين الجدد</div>
+          <div class="flow-card"><strong>⏱️ مؤقت التحضير</strong>يتحول للأصفر بعد 5 دقائق والأحمر بعد 10 — يحفّز السرعة</div>
+          <div class="flow-card"><strong>✅ Bump الطلب</strong>بعد التحضير يضغط Bump — يتغير حالة الطلب لـ "جاهز" تلقائياً</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step actor-system">
+      <div class="flow-line">
+        <div class="flow-dot">⚡</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-header">
+          <span class="flow-num">04</span>
+          <span class="flow-title">النظام يُخطر الزبون</span>
+          <span class="flow-who">Supabase Realtime — تلقائي</span>
+        </div>
+        <div class="flow-cards">
+          <div class="flow-card"><strong>📳 إشعار فوري</strong>لحظة Bump من المطبخ — تتحول شاشة الزبون لـ "طلبك جاهز!" مع اهتزاز الموبايل</div>
+          <div class="flow-card"><strong>⭐ طلب التقييم</strong>بعد استلام الطلب يظهر نموذج تقييم سريع — يُحفظ في قاعدة البيانات</div>
+          <div class="flow-card"><strong>🏆 نقاط الولاء</strong>تُضاف النقاط تلقائياً لحساب الزبون بناءً على قيمة الطلب</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step actor-manager">
+      <div class="flow-line">
+        <div class="flow-dot">📊</div>
+        <div class="flow-connector"></div>
+      </div>
+      <div class="flow-body">
+        <div class="flow-header">
+          <span class="flow-num">05</span>
+          <span class="flow-title">نهاية اليوم — التقفيل</span>
+          <span class="flow-who">الكاشير + المدير</span>
+        </div>
+        <div class="flow-cards">
+          <div class="flow-card"><strong>💰 الكاشير يقفّل</strong>يدخل الكاش والفيزا، يسجل المصروفات النثرية، يجرد الدرج</div>
+          <div class="flow-card"><strong>🔒 التقفيل الأعمى</strong>النظام يخفي المبلغ المتوقع — الكاشير يجرد بدون تحيز، حماية من الغش</div>
+          <div class="flow-card"><strong>📈 المدير يراجع</strong>يرى تقرير اليوم الكامل في master_admin — المبيعات والمصروفات والفرق</div>
+          <div class="flow-card"><strong>💼 العهدة للغد</strong>المبلغ المتبقي يُحفظ تلقائياً كعهدة لبداية يوم الغد</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ TAB 3: PAGES ═══ -->
+<div class="section" id="tab-pages">
+  <div class="section-hero">
+    <h1>دور كل <span>صفحة</span></h1>
+    <p>كل صفحة مصممة لغرض محدد ومستخدم محدد</p>
+  </div>
+
+  <div class="pages-grid">
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:rgba(0,188,212,0.1);color:var(--cyan);">📱</div>
+        <div><div class="page-name">منيو الزبون</div><div class="page-file">index.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">الواجهة الأمامية للمقهى — يفتحها الزبون من QR Code على الطاولة. هي "وجه" المقهى الرقمي.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">🖼️</span>عرض المنيو بصور وأسعار وتصنيفات</div>
+          <div class="page-feat"><span class="feat-icon">🛒</span>سلة تسوق تفاعلية مع تخصيص الأصناف</div>
+          <div class="page-feat"><span class="feat-icon">📍</span>اختيار الطاولة أو التيك أواي</div>
+          <div class="page-feat"><span class="feat-icon">⏱️</span>تتبع الطلب لحظياً بعد الإرسال</div>
+          <div class="page-feat"><span class="feat-icon">🏆</span>عرض نقاط الولاء للعميل المسجل</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:rgba(0,188,212,0.1);color:var(--cyan);border:1px solid rgba(0,188,212,0.2);">الزبون فقط</span>
+          <span class="who-tag" style="background:rgba(0,0,0,0.3);color:#666;border:1px solid #222;">بدون تسجيل دخول</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:var(--gold-d);color:var(--gold);">🧾</div>
+        <div><div class="page-name">لوحة الكاشير</div><div class="page-file">dashboard.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">مركز عمليات الكاشير اليومية — يديرها على شاشة أو تابلت في الكاونتر طوال فترة الدوام.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">📋</span>عرض الطلبات لحظياً مع تنبيه صوتي</div>
+          <div class="page-feat"><span class="feat-icon">🔄</span>تغيير حالة الطلبات (جديد → تحضير → جاهز)</div>
+          <div class="page-feat"><span class="feat-icon">🔍</span>بحث سريع بالاسم أو رقم الطلب</div>
+          <div class="page-feat"><span class="feat-icon">💰</span>تقفيل اليومية وجرد الدرج</div>
+          <div class="page-feat"><span class="feat-icon">🧹</span>أرشفة الطلبات المكتملة لتنظيف الشاشة</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,175,55,0.3);">الكاشير</span>
+          <span class="who-tag" style="background:rgba(179,136,255,0.1);color:var(--purple);border:1px solid rgba(179,136,255,0.2);">المدير</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:rgba(255,71,87,0.1);color:var(--red);">👨‍🍳</div>
+        <div><div class="page-name">شاشة المطبخ KDS</div><div class="page-file">kitchen.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">Kitchen Display System — شاشة مثبتة في المطبخ تعرض الطلبات للباريستا والطهاة بشكل واضح.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">🎯</span>تذاكر الطلبات بخط كبير واضح</div>
+          <div class="page-feat"><span class="feat-icon">⏱️</span>مؤقت لكل طلب — أخضر/أصفر/أحمر</div>
+          <div class="page-feat"><span class="feat-icon">📖</span>وصفة الصنف بضغطة واحدة</div>
+          <div class="page-feat"><span class="feat-icon">✅</span>زر Bump لتأكيد التحضير</div>
+          <div class="page-feat"><span class="feat-icon">🔕</span>لا أسعار ولا معلومات مالية</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:rgba(255,71,87,0.1);color:var(--red);border:1px solid rgba(255,71,87,0.2);">الباريستا</span>
+          <span class="who-tag" style="background:rgba(255,71,87,0.1);color:var(--red);border:1px solid rgba(255,71,87,0.2);">المطبخ</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:rgba(0,230,118,0.1);color:var(--green);">📦</div>
+        <div><div class="page-name">إدارة المخزون</div><div class="page-file">warehouse.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">لوحة متخصصة لمتابعة المواد الخام والمستلزمات — منفصلة تماماً عن العمليات اليومية.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">📊</span>جرد المخزون لكل فرع</div>
+          <div class="page-feat"><span class="feat-icon">🚨</span>تنبيهات تلقائية عند نفاد المواد</div>
+          <div class="page-feat"><span class="feat-icon">🔄</span>تحويل مواد بين الفروع</div>
+          <div class="page-feat"><span class="feat-icon">📥</span>تسجيل الاستلام من الموردين</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:rgba(0,230,118,0.1);color:var(--green);border:1px solid rgba(0,230,118,0.2);">مسؤول المخزن</span>
+          <span class="who-tag" style="background:rgba(179,136,255,0.1);color:var(--purple);border:1px solid rgba(179,136,255,0.2);">المدير</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:rgba(179,136,255,0.1);color:var(--purple);">📊</div>
+        <div><div class="page-name">لوحة الإدارة العليا</div><div class="page-file">master_admin.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">المركز الرئيسي لصاحب المقهى — يرى كل شيء ويتحكم في كل شيء من مكان واحد.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">📈</span>تقارير مبيعات يومية وشهرية</div>
+          <div class="page-feat"><span class="feat-icon">🍽️</span>إدارة المنيو الكاملة (إضافة/تعديل/إيقاف)</div>
+          <div class="page-feat"><span class="feat-icon">👥</span>بيانات العملاء ونقاط الولاء</div>
+          <div class="page-feat"><span class="feat-icon">🏢</span>مقارنة أداء الفروع</div>
+          <div class="page-feat"><span class="feat-icon">🔐</span>إدارة كلمات مرور الموظفين</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:rgba(179,136,255,0.1);color:var(--purple);border:1px solid rgba(179,136,255,0.2);">المدير فقط</span>
+          <span class="who-tag" style="background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,175,55,0.3);">صاحب المقهى</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-card">
+      <div class="page-header">
+        <div class="page-icon" style="background:rgba(212,175,55,0.08);color:var(--gold);">🛠️</div>
+        <div><div class="page-name">لوحة المطور</div><div class="page-file">dev_panel.html</div></div>
+      </div>
+      <div class="page-body">
+        <div class="page-purpose">Super Admin — أنت فقط تدخل هنا. تدير كل المقاهي المشتركة في النظام وتراقب صحة النظام.</div>
+        <div class="page-features">
+          <div class="page-feat"><span class="feat-icon">🏗️</span>إنشاء tenant جديد (مقهى جديد)</div>
+          <div class="page-feat"><span class="feat-icon">💳</span>إدارة الاشتراكات والخطط</div>
+          <div class="page-feat"><span class="feat-icon">🔭</span>مراقبة استخدام كل مقهى</div>
+          <div class="page-feat"><span class="feat-icon">⚙️</span>إعدادات متقدمة لكل tenant</div>
+        </div>
+        <div class="page-who-row">
+          <span class="who-tag" style="background:var(--gold-d);color:var(--gold);border:1px solid rgba(212,175,55,0.3);">أنت فقط 🔒</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ TAB 4: BEST PRACTICES ═══ -->
+<div class="section" id="tab-practices">
+  <div class="section-hero">
+    <h1>أفضل الممارسات <span>العالمية</span></h1>
+    <p>ما يميز SaaS ناجح عن مجرد موقع عادي</p>
+  </div>
+
+  <div class="practices-grid">
+
+    <div class="practice-card">
+      <div class="practice-num">01</div>
+      <div class="practice-title">🔒 كل موظف يرى ما يخصه فقط</div>
+      <div class="practice-body">
+        <b>الباريستا</b> لا يرى الأسعار. <b>الكاشير</b> لا يرى التقارير المالية. <b>مسؤول المخزن</b> لا يرى بيانات العملاء. هذا يحمي المعلومات الحساسة ويبسّط واجهة كل موظف.
+        <div class="compare">
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--red);">❌ الطريقة الخاطئة</div>
+            <div class="compare-item">كل موظف يدخل نفس الصفحة</div>
+            <div class="compare-item">الكاشير يرى التقارير المالية</div>
+            <div class="compare-item">المطبخ يرى الأسعار والعملاء</div>
+          </div>
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--green);">✅ الطريقة الصح</div>
+            <div class="compare-item">صفحة مخصصة لكل دور</div>
+            <div class="compare-item">كل صفحة تعرض ما يلزم فقط</div>
+            <div class="compare-item">RLS في Supabase يحمي البيانات</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="practice-card">
+      <div class="practice-num">02</div>
+      <div class="practice-title">⚡ كل شيء لحظي بدون تحديث</div>
+      <div class="practice-body">
+        الزبون يطلب → الكاشير يرى الطلب فوراً → المطبخ يبدأ التحضير → الزبون يرى "جاهز". كل هذا بدون أي شخص يضغط Refresh. هذا ما يصنعه <b>Supabase Realtime</b> ويجعل تجربة المقهى سلسة.
+        <div class="compare">
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--red);">❌ بدون Realtime</div>
+            <div class="compare-item">الكاشير يضغط Refresh كل دقيقة</div>
+            <div class="compare-item">تأخر في استلام الطلبات</div>
+            <div class="compare-item">تجربة مستخدم ضعيفة</div>
+          </div>
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--green);">✅ مع Realtime</div>
+            <div class="compare-item">الطلب يظهر فوراً مع صوت</div>
+            <div class="compare-item">تزامن تلقائي بين الكاشير والمطبخ</div>
+            <div class="compare-item">تجربة احترافية مثل Deliveroo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="practice-card">
+      <div class="practice-num">03</div>
+      <div class="practice-title">📱 كل صفحة لجهاز مختلف</div>
+      <div class="practice-body">
+        <b>index.html</b> (منيو الزبون) = موبايل أولاً.<br>
+        <b>kitchen.html</b> = شاشة كبيرة في المطبخ.<br>
+        <b>dashboard.html</b> = تابلت أو لابتوب عند الكاونتر.<br>
+        <b>master_admin.html</b> = لابتوب للمدير.<br><br>
+        كل واجهة مصممة للجهاز الذي تُستخدم عليه — هذا ما تفعله Toast وSquare.
+      </div>
+    </div>
+
+    <div class="practice-card">
+      <div class="practice-num">04</div>
+      <div class="practice-title">🌍 جاهز للتوسع من اليوم الأول</div>
+      <div class="practice-body">
+        بفضل <b>cafe_id</b> في كل جدول، إضافة مقهى جديد تستغرق دقيقتين — مجرد إدخال صف جديد في جدول cafes. لا تحتاج لإنشاء قاعدة بيانات جديدة أو نسخ الكود.
+        <div class="compare">
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--red);">❌ بدون multi-tenancy</div>
+            <div class="compare-item">مشروع جديد لكل مقهى</div>
+            <div class="compare-item">تكلفة مضاعفة مع النمو</div>
+            <div class="compare-item">صعب الإدارة والتحديث</div>
+          </div>
+          <div class="compare-col">
+            <div class="compare-label" style="color:var(--green);">✅ مع multi-tenancy</div>
+            <div class="compare-item">مشروع واحد لـ 1000 مقهى</div>
+            <div class="compare-item">تكلفة ثابتة مع النمو</div>
+            <div class="compare-item">تحديث واحد يصل للجميع</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function show(tab, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
