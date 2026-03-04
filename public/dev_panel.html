@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Nexus - Developer Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background: #050505; color: #00ff88; font-family: 'Courier New', Courier, monospace; padding: 0; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding-top: 40px; overflow-y: auto; padding-bottom: 50px; }
+    .container { background: #111; border: 1px solid #333; padding: 40px; border-radius: 12px; width: 95%; max-width: 800px; box-shadow: 0 0 30px rgba(0, 255, 136, 0.1); margin-bottom: 40px; }
+    h1 { border-bottom: 1px dashed #00ff88; padding-bottom: 15px; margin-top: 0; text-align: center; }
+    
+    .feature-row { display: flex; justify-content: space-between; align-items: center; background: #0a0a0a; padding: 20px; border: 1px solid #222; margin-bottom: 15px; border-radius: 8px; }
+    .f-title { font-size: 1.2rem; font-weight: bold; color: #fff; margin-bottom: 5px; font-family: 'Cairo'; }
+    .f-desc { font-size: 0.85rem; color: #666; font-family: 'Cairo'; }
+    
+    button { background: #00ff88; color: #000; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 6px; font-family: 'Cairo'; transition: 0.2s; }
+    button.off { background: #333; color: #888; }
+    button:hover { transform: scale(1.05); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    input, select { background: #000; border: 1px solid #00ff88; color: #00ff88; padding: 15px; font-size: 1.1rem; text-align: center; outline: none; border-radius: 8px; width: 100%; box-sizing: border-box; font-family: 'Cairo'; transition: 0.3s; }
+    input:focus, select:focus { box-shadow: 0 0 15px rgba(0,255,136,0.3); }
+    
+    .branding-box, .branch-box { background: #0a0a0a; border: 1px solid #00ff88; padding: 25px; border-radius: 8px; margin-top: 30px; }
+    
+    .branch-card { background: #151515; border: 1px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+    .branch-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222; padding-bottom: 10px; margin-bottom: 15px; }
+    .branch-name { font-family: 'Cairo'; font-weight: 900; color: #fff; font-size: 1.2rem; }
+    .sub-loc-chip { display: inline-block; background: #000; border: 1px solid #00ff88; color: #00ff88; padding: 4px 10px; border-radius: 50px; font-size: 0.85rem; font-family: 'Cairo'; margin-left: 5px; margin-bottom: 5px; }
+    .sub-loc-chip i { cursor: pointer; margin-right: 5px; color: #e74c3c; }
+    .add-sub-box { display: flex; gap: 10px; margin-top: 15px; }
+    .add-sub-box input { padding: 8px; font-size: 0.9rem; border-color: #333; color: #fff; }
+
+    #login-screen { position: fixed; inset: 0; background: #050505; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+  </style>
+</head>
+<body>
+
+  <div id="login-screen">
+    <i class="fas fa-terminal fa-4x" style="margin-bottom: 20px;"></i>
+    <h2 style="font-family:'Cairo'; color:#fff;">دخول المطورين</h2>
+    <input type="password" id="dev-pass" placeholder="ROOT PASS" style="width:300px; margin-bottom:20px; letter-spacing: 5px;" onkeydown="if(event.key === 'Enter') loginDev()">
+    <button onclick="loginDev()" id="btn-login">Access System <i class="fas fa-arrow-right"></i></button>
+  </div>
+
+  <div class="container" id="dev-content" style="display:none;">
+    <h1>// NEXUS_DEV_HUB</h1>
+    <p style="text-align:center; color:#666; margin-bottom:30px;">SaaS Architecture & Tenant Controls</p>
+
+    <div class="branding-box" style="border-color: #e74c3c; margin-bottom: 30px;">
+      <h3 style="margin-top:0; color:#e74c3c; font-family:'Cairo';"><i class="fas fa-user-secret"></i> أمان وحماية النظام (Dev Security)</h3>
+      <p style="font-size:0.85rem; color:#888; font-family:'Cairo'; margin-bottom:15px;">قم بتغيير كلمة المرور الخاصة بك كمطور للنظام.</p>
+      <div style="display:flex; gap:10px;">
+          <input type="password" id="new-dev-pass" placeholder="كلمة المرور الجديدة..." style="border-color:#555; color:#fff;">
+          <button onclick="updateDevPassword()" style="background:#e74c3c; color:#fff; white-space:nowrap;"><i class="fas fa-key"></i> تغيير الباسورد</button>
+      </div>
+    </div>
+
+    <div class="branding-box">
+      <h3 style="margin-top:0; color:#fff; font-family:'Cairo';"><i class="fas fa-paint-brush"></i> هوية العميل</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+          <input type="text" id="dev-brand-name" placeholder="اسم الكافيه (مثال: LACAZZA)">
+          <input type="text" id="dev-order-phone" placeholder="رقم هاتف الدعم">
+      </div>
+      <input type="url" id="dev-brand-logo" placeholder="رابط اللوجو (URL)" style="margin-bottom:15px;">
+      <button onclick="saveBranding()" style="width:100%;" id="btn-brand">تحديث الهوية البصرية <i class="fas fa-save"></i></button>
+    </div>
+
+    <div class="branding-box" style="border-color: #3498db; margin-top:30px;">
+      <h3 style="margin-top:0; color:#3498db; font-family:'Cairo';"><i class="fas fa-warehouse"></i> هندسة المخازن (Supply Chain Nodes)</h3>
+      <p style="font-size:0.85rem; color:#888; font-family:'Cairo'; margin-bottom:15px;">المخزن الأول هو دائماً "الرئيسي"، والباقي فرعية تغذي فروع الكافيهات.</p>
+      
+      <div id="warehouses-list-container" style="margin-bottom: 20px;"></div>
+      
+      <div style="display:flex; gap:10px; border-top:1px dashed #333; padding-top:20px;">
+          <input type="text" id="new-warehouse-name" placeholder="اسم المخزن الجديد..." style="border-color:#3498db; color:#fff;">
+          <button onclick="addWarehouse()" style="background:#3498db; color:#fff; white-space:nowrap;" id="btn-add-warehouse"><i class="fas fa-plus"></i> إضافة مخزن</button>
+      </div>
+    </div>
+
+    <div class="branch-box">
+      <h3 style="margin-top:0; color:#fff; font-family:'Cairo';"><i class="fas fa-store"></i> فروع الكافيه ونقاط البيع (Retail)</h3>
+      <p style="font-size:0.85rem; color:#888; font-family:'Cairo'; margin-bottom:15px;">أضف فروع الكافيه والأماكن (طاولات/تيك أواي) ليتم تفعيلها فوراً.</p>
+      <div id="branches-list-container"></div>
+      <div style="display:flex; gap:10px; margin-top: 20px; padding-top: 20px; border-top: 1px dashed #333;">
+          <input type="text" id="new-branch-name" placeholder="اسم الفرع الجديد..." style="border-color:#555; color:#fff;">
+          <button onclick="addNewBranch()" style="white-space:nowrap;"><i class="fas fa-plus"></i> إضافة فرع</button>
+      </div>
+      <button onclick="saveLocationsToDB()" id="btn-save-locs" style="width:100%; margin-top:20px; background:#fff; color:#000;">رفع التحديثات للسيرفر <i class="fas fa-cloud-upload-alt"></i></button>
+    </div>
+
+    <h3 style="color:#fff; font-family:'Cairo'; margin-top:40px; border-bottom:1px solid #333; padding-bottom:10px;">وحدات النظام الأساسية</h3>
+    
+    <div class="feature-row">
+      <div><div class="f-title">شاشة المطبخ (KDS)</div><div class="f-desc">تفعيل دورة العمل (انتظار -> مطبخ -> كاشير)</div></div>
+      <button id="btn-kds" onclick="toggleOption('Feature_KDS', 'btn-kds')">Loading...</button>
+    </div>
+    
+    <div class="feature-row">
+      <div><div class="f-title">الدفع عبر إنستا باي</div><div class="f-desc">إظهار زر التحويل لإنستا باي للعملاء</div></div>
+      <button id="btn-insta" onclick="toggleOption('Enable_InstaPay', 'btn-insta')">Loading...</button>
+    </div>
+
+    <div class="feature-row">
+      <div><div class="f-title">التقفيل الأعمى (Blind Close)</div><div class="f-desc">إخفاء المبالغ المتوقعة عن الكاشير وقت الجرد لمنع التلاعب.</div></div>
+      <button id="btn-blind" onclick="toggleOption('Enable_Blind_Close', 'btn-blind')">Loading...</button>
+    </div>
+
+    <h3 style="color:#fff; font-family:'Cairo'; margin-top:40px; border-bottom:1px solid #333; padding-bottom:10px;">إعدادات المنيو والتسويق</h3>
+
+    <div class="feature-row">
+      <div><div class="f-title">تبويب "الكل" في المنيو</div><div class="f-desc">إظهار أو إخفاء تبويب "الكل" الذي يعرض جميع أصناف المنيو للعميل</div></div>
+      <button id="btn-show-all" onclick="toggleOption('showAllCategory', 'btn-show-all')">Loading...</button>
+    </div>
+
+    <div class="feature-row">
+      <div><div class="f-title">درع التقييمات الذكي (Review Shield)</div><div class="f-desc">فلترة التقييمات واعتراض الشكاوى، وتوجيه الـ 5 نجوم فقط إلى Google Maps</div></div>
+      <button id="btn-review" onclick="toggleOption('Enable_Review_Shield', 'btn-review')">Loading...</button>
+    </div>
+
+    <div style="background: #0a0a0a; padding: 20px; border: 1px solid #222; margin-bottom: 15px; border-radius: 8px;">
+      <div class="f-title" style="margin-bottom: 10px;">رابط صفحة جوجل مابس (لدرع التقييمات)</div>
+      <div style="display:flex; gap:10px;">
+          <input type="url" id="dev-gmaps-link" placeholder="https://g.page/r/..." style="padding:10px; font-size:1rem; border-color:#555; color:#fff; text-align:left;" dir="ltr">
+          <button onclick="saveOptionsData()" style="white-space:nowrap;"><i class="fas fa-save"></i> حفظ الرابط</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { supabase } from './js/supabaseClient.js';
+
+    // الحالة المركزية للإعدادات
+    let tenantSettings = {
+        info: { brand_name: '', logo: '', order_phone: '' },
+        options: { 
+            Feature_KDS: true, 
+            Enable_InstaPay: false,
+            Enable_Blind_Close: true,      
+            showAllCategory: true,         
+            Enable_Review_Shield: false,   
+            google_maps_link: ''           
+        },
+        locations: {}, 
+        warehouses: [], // المصفوفة الجديدة للمخازن المركزية والفرعية
+        security: { dev_pass: 'admin123', master_pass: '12345' } 
+    };
+
+    async function loginDev() {
+      const pass = document.getElementById('dev-pass').value;
+      const btn = document.getElementById('btn-login');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      
+      try {
+          const { data } = await supabase.from('tenant_settings').select('value').eq('key', 'security').single();
+          if (data && data.value) {
+              tenantSettings.security.dev_pass = data.value.dev_pass || 'admin123';
+              tenantSettings.security.master_pass = data.value.master_pass || '12345';
+          }
+
+          if(pass === tenantSettings.security.dev_pass) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dev-content').style.display = 'block';
+            await loadAllSettings();
+          } else { 
+            alert("Access Denied."); 
+            btn.innerHTML = 'Access System <i class="fas fa-arrow-right"></i>';
+          }
+      } catch(err) {
+          alert("Error connecting.");
+          btn.innerHTML = 'Access System <i class="fas fa-arrow-right"></i>';
+      }
+    }
+
+    async function updateDevPassword() {
+        const newPass = document.getElementById('new-dev-pass').value.trim();
+        if(!newPass) return alert("الرجاء إدخال كلمة المرور الجديدة");
+        if(!confirm("هل أنت متأكد من تغيير الرمز السري للمطور؟")) return;
+
+        tenantSettings.security.dev_pass = newPass;
+        await supabase.from('tenant_settings').upsert({ key: 'security', value: tenantSettings.security });
+        alert("تم تغيير كلمة المرور للمطور بنجاح! سيتم تطبيقها في الدخول القادم.");
+        document.getElementById('new-dev-pass').value = '';
+    }
+
+    async function loadAllSettings() {
+      const { data } = await supabase.from('tenant_settings').select('*');
+      if(data) {
+          data.forEach(row => {
+              if(row.key === 'locations') {
+                  let locs = row.value;
+                  for(let b in locs) { if(Array.isArray(locs[b])) { locs[b] = { "أماكن الاستلام": locs[b] }; } }
+                  tenantSettings.locations = locs;
+              } 
+              else if(row.key === 'warehouses') {
+                  tenantSettings.warehouses = row.value || [];
+              }
+              else if(tenantSettings[row.key] !== undefined) {
+                  tenantSettings[row.key] = row.value;
+              }
+          });
+      }
+      
+      document.getElementById('dev-brand-name').value = tenantSettings.info.brand_name || '';
+      document.getElementById('dev-brand-logo').value = tenantSettings.info.logo || '';
+      document.getElementById('dev-order-phone').value = tenantSettings.info.order_phone || '';
+      
+      updateBtnState('btn-kds', tenantSettings.options.Feature_KDS);
+      updateBtnState('btn-insta', tenantSettings.options.Enable_InstaPay);
+      
+      let showAll = tenantSettings.options.showAllCategory;
+      if(showAll === undefined) showAll = true; 
+      updateBtnState('btn-show-all', showAll);
+      
+      let blindClose = tenantSettings.options.Enable_Blind_Close;
+      if(blindClose === undefined) blindClose = true; 
+      updateBtnState('btn-blind', blindClose);
+
+      updateBtnState('btn-review', tenantSettings.options.Enable_Review_Shield);
+      document.getElementById('dev-gmaps-link').value = tenantSettings.options.google_maps_link || '';
+
+      renderBranches();
+      renderWarehouses(); // دالة رسم المخازن
+    }
+
+    // --- هندسة المخازن المستقلة (Warehouses Management) ---
+    function renderWarehouses() {
+        const container = document.getElementById('warehouses-list-container');
+        if(!tenantSettings.warehouses || tenantSettings.warehouses.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#555; font-family:\'Cairo\';">لا توجد مخازن. قم بإضافة المخزن الرئيسي أولاً.</p>';
+            return;
+        }
+
+        container.innerHTML = tenantSettings.warehouses.map((w, index) => {
+            // الأول دائماً يأخذ شارة الرئيسي
+            let badge = w.isMain ? `<span style="background:var(--gold); color:#000; padding:4px 10px; border-radius:50px; font-size:0.75rem; font-weight:bold; margin-right:10px;"><i class="fas fa-crown"></i> مخزن رئيسي</span>` : `<span style="background:#444; color:#fff; padding:4px 10px; border-radius:50px; font-size:0.75rem; margin-right:10px;">مخزن فرعي</span>`;
+            return `
+            <div style="background:#0a0a0a; border:1px solid #333; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div><span style="color:#fff; font-weight:bold; font-family:'Cairo'; font-size:1.1rem;">${w.name}</span> ${badge}</div>
+                <i class="fas fa-trash" style="color:#e74c3c; cursor:pointer; font-size:1.2rem; transition:0.3s;" onmouseover="this.style.color='#c0392b'" onmouseout="this.style.color='#e74c3c'" onclick="removeWarehouse(${index})"></i>
+            </div>`;
+        }).join('');
+    }
+
+    async function addWarehouse() {
+        const input = document.getElementById('new-warehouse-name');
+        const name = input.value.trim();
+        if(!name) return;
+
+        if(!tenantSettings.warehouses) tenantSettings.warehouses = [];
+        if(tenantSettings.warehouses.find(w => w.name === name)) return alert("اسم المخزن موجود مسبقاً!");
+
+        // الذكاء: المخزن الأول الذي يتم إضافته يكون هو الرئيسي أوتوماتيكياً
+        const isMain = tenantSettings.warehouses.length === 0; 
+        tenantSettings.warehouses.push({ name: name, isMain: isMain });
+
+        input.value = '';
+        renderWarehouses();
+        
+        const btn = document.getElementById('btn-add-warehouse');
+        const orig = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        await supabase.from('tenant_settings').upsert({ key: 'warehouses', value: tenantSettings.warehouses });
+        btn.innerHTML = orig;
+    }
+
+    async function removeWarehouse(index) {
+        if(!confirm("تأكيد حذف هذا المخزن نهائياً؟")) return;
+        tenantSettings.warehouses.splice(index, 1);
+        
+        // ذكاء الترقية: لو تم حذف الرئيسي، المخزن الذي أصبح رقم 0 يتحول لرئيسي
+        if(tenantSettings.warehouses.length > 0) {
+            tenantSettings.warehouses.forEach(w => w.isMain = false);
+            tenantSettings.warehouses[0].isMain = true; 
+        }
+        
+        renderWarehouses();
+        await supabase.from('tenant_settings').upsert({ key: 'warehouses', value: tenantSettings.warehouses });
+    }
+
+    // --- هندسة الفروع (Branches) ---
+    function renderBranches() {
+        const container = document.getElementById('branches-list-container');
+        let html = '';
+        const branches = Object.keys(tenantSettings.locations);
+
+        if(branches.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#555;">لا توجد فروع مسجلة.</p>'; return;
+        }
+
+        branches.forEach((branch, bIdx) => {
+            let mainPlacesHtml = '';
+            let mainPlaces = tenantSettings.locations[branch] || {};
+            
+            Object.keys(mainPlaces).forEach((mp, mpIdx) => {
+                let subLocs = mainPlaces[mp] || [];
+                let chipsHtml = subLocs.map((sub, sIdx) => `<div class="sub-loc-chip">${sub} <i class="fas fa-times" onclick="removeSubLoc('${branch}', '${mp}', ${sIdx})"></i></div>`).join('');
+                
+                mainPlacesHtml += `
+                <div style="background:#0a0a0a; border:1px solid #222; padding:15px; border-radius:8px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:#00ff88; font-weight:bold;"><i class="fas fa-map-marker-alt"></i> ${mp}</span>
+                        <i class="fas fa-trash" style="color:#e74c3c; cursor:pointer;" onclick="removeMainPlace('${branch}', '${mp}')"></i>
+                    </div>
+                    <div style="margin-bottom:10px;">${chipsHtml}</div>
+                    <div class="add-sub-box" style="margin-top:0;">
+                        <input type="text" id="new-sub-${bIdx}-${mpIdx}" placeholder="مكان فرعي (مثال: طاولة 1)" style="flex:1; padding:6px; font-size:0.85rem;">
+                        <button style="padding:6px 12px; font-size:0.85rem;" onclick="addSubLoc('${branch}', '${mp}', 'new-sub-${bIdx}-${mpIdx}')"><i class="fas fa-plus"></i> إضافة</button>
+                    </div>
+                </div>`;
+            });
+
+            html += `
+            <div class="branch-card">
+                <div class="branch-header">
+                    <span class="branch-name"><i class="fas fa-store"></i> ${branch}</span>
+                    <button class="off" style="padding:5px 10px;" onclick="removeBranch('${branch}')"><i class="fas fa-trash"></i> حذف الفرع</button>
+                </div>
+                ${mainPlacesHtml}
+                <div class="add-sub-box" style="border-top:1px dashed #333; padding-top:15px;">
+                    <input type="text" id="new-mp-${bIdx}" placeholder="مكان رئيسي (مثال: تيك أوي، صالة 1)" style="flex:1;">
+                    <button style="padding:8px 15px;" onclick="addMainPlace('${branch}', 'new-mp-${bIdx}')"><i class="fas fa-layer-group"></i> إضافة قسم</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function addNewBranch() {
+        const input = document.getElementById('new-branch-name'); const name = input.value.trim();
+        if(!name) return; if(tenantSettings.locations[name]) return alert("الفرع موجود مسبقاً!");
+        tenantSettings.locations[name] = {}; input.value = ''; renderBranches();
+    }
+    function removeBranch(branch) { if(confirm(`حذف فرع (${branch}) نهائياً؟`)) { delete tenantSettings.locations[branch]; renderBranches(); } }
+    function addMainPlace(branch, inputId) {
+        const input = document.getElementById(inputId); const mp = input.value.trim();
+        if(!mp) return; if(tenantSettings.locations[branch][mp]) return alert("القسم موجود مسبقاً!");
+        tenantSettings.locations[branch][mp] = []; input.value = ''; renderBranches();
+    }
+    function removeMainPlace(branch, mp) { if(confirm(`حذف قسم (${mp})؟`)) { delete tenantSettings.locations[branch][mp]; renderBranches(); } }
+    function addSubLoc(branch, mp, inputId) {
+        const input = document.getElementById(inputId); const val = input.value.trim();
+        if(!val) return; tenantSettings.locations[branch][mp].push(val); input.value = ''; renderBranches();
+    }
+    function removeSubLoc(branch, mp, index) { tenantSettings.locations[branch][mp].splice(index, 1); renderBranches(); }
+
+    async function saveLocationsToDB() {
+        const btn = document.getElementById('btn-save-locs'); const orig = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        try { await supabase.from('tenant_settings').upsert({ key: 'locations', value: tenantSettings.locations }); btn.innerHTML = 'تم الحفظ بنجاح ✅'; setTimeout(() => btn.innerHTML = orig, 2000); } 
+        catch(e) { alert("خطأ في الحفظ"); btn.innerHTML = orig; }
+    }
+
+    async function saveBranding() {
+      const btn = document.getElementById('btn-brand'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      tenantSettings.info.brand_name = document.getElementById('dev-brand-name').value;
+      tenantSettings.info.logo = document.getElementById('dev-brand-logo').value;
+      tenantSettings.info.order_phone = document.getElementById('dev-order-phone').value;
+      await supabase.from('tenant_settings').upsert({ key: 'info', value: tenantSettings.info });
+      btn.innerHTML = "تم التحديث بنجاح ✅"; setTimeout(()=> btn.innerHTML = "تحديث الهوية البصرية <i class='fas fa-save'></i>", 2000);
+    }
+
+    function updateBtnState(btnId, isOn) { 
+        const btn = document.getElementById(btnId); 
+        if(isOn === true || isOn === 'true') { 
+            btn.innerText = "ACTIVE"; btn.className = ""; 
+        } else { 
+            btn.innerText = "DISABLED"; btn.className = "off"; 
+        } 
+    }
+    
+    async function toggleOption(key, btnId) {
+      document.getElementById(btnId).innerText = "Wait...";
+      let currentState = tenantSettings.options[key]; 
+      let newState = !(currentState === true || currentState === 'true');
+      
+      tenantSettings.options[key] = newState;
+      await supabase.from('tenant_settings').upsert({ key: 'options', value: tenantSettings.options });
+      updateBtnState(btnId, newState);
+    }
+
+    async function saveOptionsData() {
+        const btn = document.querySelector('button[onclick="saveOptionsData()"]');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        tenantSettings.options.google_maps_link = document.getElementById('dev-gmaps-link').value.trim();
+        await supabase.from('tenant_settings').upsert({ key: 'options', value: tenantSettings.options });
+        
+        btn.innerHTML = 'تم الحفظ ✅';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+    }
+
+    // ربط كافة الدوال بالـ window
+    window.loginDev = loginDev; 
+    window.saveBranding = saveBranding; 
+    window.toggleOption = toggleOption; 
+    
+    window.addWarehouse = addWarehouse;
+    window.removeWarehouse = removeWarehouse;
+    
+    window.addNewBranch = addNewBranch; 
+    window.removeBranch = removeBranch; 
+    window.addMainPlace = addMainPlace; 
+    window.removeMainPlace = removeMainPlace; 
+    window.addSubLoc = addSubLoc; 
+    window.removeSubLoc = removeSubLoc; 
+    window.saveLocationsToDB = saveLocationsToDB; 
+    window.updateDevPassword = updateDevPassword;
+    window.saveOptionsData = saveOptionsData; 
+
+  </script>
+</body>
+</html>
